@@ -12,6 +12,7 @@ async def testing_route():
 async def health_check():
     return {"message": "Api health check successful"}
 
+
 @app.get("/test")
 async def test_route():
     return {"message": "Test route successful"}
