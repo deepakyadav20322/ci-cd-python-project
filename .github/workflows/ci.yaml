@@ -53,3 +53,29 @@ jobs:
         run: python -c "from app.main import app; print('App import successful')"
       - name: Run tests with coverage
         run: python -m pytest -v --cov=app --cov-report=term-missing --cov-fail-under=80
+
+  docker:
+    runs-on: ubuntu-latest
+    needs: [lint, test]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+      - name: Build image
+        run: docker build -t fastapi-cicd:${{ github.sha }} .
+      - name: Run container
+        run: docker run -d --name api -p 8000:8000 fastapi-cicd:${{ github.sha }}
+      - name: Smoke test /health
+        run: |
+          for i in $(seq 1 15); do
+            if curl --fail --silent http://localhost:8000/health; then
+              echo
+              echo "healthy after $i attempt(s)"
+              exit 0
+            fi
+            sleep 2
+          done
+          echo "health check failed"
+          exit 1
+      - name: Show container logs
+        if: always()
+        run: docker logs api
